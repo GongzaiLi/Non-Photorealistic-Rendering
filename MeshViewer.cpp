@@ -20,6 +20,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/freeglut.h>
+#include "loadTGA.h" // upload tga image
 using namespace std;
 
 
