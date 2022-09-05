@@ -135,7 +135,8 @@ void initialize()
 	int num_faces = mesh.n_faces();
 	float* vertPos = new float[num_verts * 3];
 	float* vertNorm = new float[num_verts * 3];
-	num_Elems = num_faces * 3;
+	//num_Elems = num_faces * 3;
+	num_Elems = num_faces * 6; // 3 half edge + 3 counter-clockwise helf edge
 	short* elems = new short[num_Elems];   //Asumption: Triangle mesh
 
 	if (!mesh.has_vertex_normals())
@@ -145,17 +146,16 @@ void initialize()
 		mesh.update_normals();
 	}
 
-	// todo add
 	MyMesh::VertexIter vit;  //A vertex iterator
 	MyMesh::FaceIter fit;    //A face iterator
 	MyMesh::FaceVertexIter fvit; //Face-vertex iterator
-	OpenMesh::VertexHandle verH1, verH2;
+	OpenMesh::VertexHandle verH1, verH2; // verH2 using Half edge handle vertex
 	OpenMesh::FaceHandle facH;
 	MyMesh::Point pos;
 	MyMesh::Normal norm;
 	int indx;
 
-	//Use a vertex iterator to get vertex positions and vertex normal vectors
+	// Use a vertex iterator to get vertex positions and vertex normal vectors
 	indx = 0;
 	for (vit = mesh.vertices_begin(); vit != mesh.vertices_end(); vit++)
 	{
@@ -169,7 +169,7 @@ void initialize()
 			indx++;
 		}
 	}
-
+	/*
 	//Use a face iterator to get the vertex indices for each face 
 	// Computing the element array for triangles:
 	indx = 0;
@@ -183,6 +183,41 @@ void initialize()
 			indx++;
 		}
 	}
+	*/
+
+	// Book Page 31 ---- Doing Half edge handle
+	OpenMesh::HalfedgeHandle heH, oheH;
+	MyMesh::FaceHalfedgeIter fhit;
+
+	indx = 0; //Vertex element index
+	for (fit = mesh.faces_begin(); fit != mesh.faces_end(); fit++)
+	{
+		facH = *fit; //Face handle
+		for (fhit = mesh.fh_iter(facH); fhit.is_valid(); fhit++)
+		{
+			heH = *fhit; //Halfedge handle
+			oheH = mesh.opposite_halfedge_handle(heH);
+			verH2 = mesh.from_vertex_handle(heH);
+			elems[indx] = verH2.idx();
+			if (!mesh.is_boundary(oheH)) //Interior edge
+			{
+				verH2 = mesh.opposite_vh(oheH);
+				elems[indx + 1] = verH2.idx();
+			}
+			else { //Boundary edge
+				elems[indx + 1] = elems[indx]; //Repeated vertex
+			}
+			indx += 2;
+
+		}
+	}
+
+	/*
+	The triangle adjacency primitive finds applications in non-photorealistic rendering of a mesh model, 
+	where the prominent edges of the model are highlighted and a special type of shading model or texture 
+	mapping applied to create an artistic/expressive style in the way the model is displayed. 
+	The implementation of a non-photorealistic rendering algorithm using the geometry shader is discussed in detail in Chap. 4.
+	*/
  
 	mesh.release_vertex_normals();
 
@@ -204,7 +239,8 @@ void initialize()
 	glEnableVertexAttribArray(1);  // Vertex normal
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short) * num_faces * 3, elems, GL_STATIC_DRAW);
+	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short) * num_faces * 3, elems, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short) * num_faces * 6, elems, GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
 
