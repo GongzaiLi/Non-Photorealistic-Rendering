@@ -88,11 +88,13 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 //Initialisation function for OpenMesh, shaders and OpenGL
 void initialize()
 {
+	// todo add load textures()
+
 	float xmin, xmax, ymin, ymax, zmin, zmax;
 	float CDR = M_PI / 180.0f;
 
 	//============= Load mesh ==================
-	if (!OpenMesh::IO::read_mesh(mesh, modelPath + "Camel.off"))
+	if (!OpenMesh::IO::read_mesh(mesh, modelPath + "Dolphin.obj")) //Dolphin.obj  Camel.off
 	{
 		cerr << "Mesh file read error.\n";
 	}
@@ -107,6 +109,7 @@ void initialize()
 	//============= Load shaders ==================
 	GLuint shaderv = loadShader(GL_VERTEX_SHADER, shaderPath + "MeshViewer.vert");
 	GLuint shaderf = loadShader(GL_FRAGMENT_SHADER, shaderPath + "MeshViewer.frag");
+	// todo geom shader
 
 	GLuint program = glCreateProgram();
 	glAttachShader(program, shaderv);
@@ -142,6 +145,7 @@ void initialize()
 		mesh.update_normals();
 	}
 
+	// todo add
 	MyMesh::VertexIter vit;  //A vertex iterator
 	MyMesh::FaceIter fit;    //A face iterator
 	MyMesh::FaceVertexIter fvit; //Face-vertex iterator
@@ -166,7 +170,8 @@ void initialize()
 		}
 	}
 
-	//Use a face iterator to get the vertex indices for each face
+	//Use a face iterator to get the vertex indices for each face 
+	// Computing the element array for triangles:
 	indx = 0;
 	for (fit = mesh.faces_begin(); fit != mesh.faces_end(); fit++)
 	{
@@ -268,7 +273,8 @@ void display()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBindVertexArray(vaoID);
-	glDrawElements(GL_TRIANGLES, num_Elems, GL_UNSIGNED_SHORT, NULL);
+	//glDrawElements(GL_TRIANGLES, num_Elems, GL_UNSIGNED_SHORT, NULL);
+	glDrawElements(GL_TRIANGLES_ADJACENCY, num_Elems, GL_UNSIGNED_SHORT, NULL);
 
 	glFlush();
 }
@@ -280,7 +286,7 @@ int main(int argc, char** argv)
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB |GLUT_DEPTH);
 	glutInitWindowSize(600, 600);
 	glutInitWindowPosition(10, 10);
-	glutCreateWindow("Mesh Viewer (OpenMesh)");
+	glutCreateWindow("Mesh Viewer (OpenMesh)-gli65");
 	glutInitContextVersion(4, 2);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 
