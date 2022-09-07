@@ -42,6 +42,9 @@ bool wireframe = false;
 string shaderPath = "./src/shaders/";
 string modelPath = "./src/models/";
 
+GLuint creaseEdgeThresholdLoc;
+float creaseEdgeThreshold = 20;
+
 //Loads a shader file and returns the reference to a shader object
 GLuint loadShader(GLenum shaderType, string filename)
 {
@@ -257,6 +260,10 @@ void initialize()
 	norMatrixLoc = glGetUniformLocation(program, "norMatrix");
 	wireLoc = glGetUniformLocation(program, "wireMode");
 	lgtLoc = glGetUniformLocation(program, "lightPos");
+	creaseEdgeThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
+
+
+
 	glm::vec4 light = glm::vec4(5.0, 5.0, 10.0, 1.0);
 	glm::mat4 proj;
 	proj = glm::perspective(60.0f * CDR, 1.0f, 2.0f, 10.0f);  //perspective projection matrix
@@ -309,6 +316,8 @@ void display()
 
 	glm::mat4 invMatrix = glm::inverse(viewMatrix);  //Inverse of model-view matrix
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
+
+	glUniform1f(creaseEdgeThresholdLoc, creaseEdgeThreshold);
 
 	if (wireframe) glUniform1i(wireLoc, 1);
 	else		   glUniform1i(wireLoc, 0);

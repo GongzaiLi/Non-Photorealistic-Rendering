@@ -6,6 +6,7 @@ uniform int wireMode;
 in vec3 vecNormal;
 in vec3 lgtVec;
 in vec4 halfVec;
+flat in int isDrewEdge;
 
 out vec4 outColor;
 
@@ -23,9 +24,14 @@ void threeTone()
 
 void main() 
 {
-   if(wireMode == 1)    //Wireframe
+   if(wireMode == 1) {    //Wireframe
        outColor = vec4(0, 0, 1, 1);
-   else			//Fill + lighting
+   } else {			//Fill + lighting
        //outColor = diffTerm * vec4(0, 1, 1, 1);
-       threeTone();
+       if (isDrewEdge == 1) {
+            outColor = vec4(0.0);
+       } else {
+            threeTone();
+       }
+    }
 }
