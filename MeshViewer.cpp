@@ -23,9 +23,8 @@
 #include "loadTGA.h" // upload tga image
 using namespace std;
 // todo list
-// 3. pencil shading with mipmap
-// 4. add silhouette edges
-// 5. add crease edges
+// 1. pencil shading with mipmap
+// 2. pencil shading
 
 
 typedef OpenMesh::TriMesh_ArrayKernelT<> MyMesh;
@@ -42,8 +41,13 @@ bool wireframe = false;
 string shaderPath = "./src/shaders/";
 string modelPath = "./src/models/";
 
-GLuint creaseEdgeThresholdLoc;
+GLuint creaseEdgeThresholdLoc, creaseSizeLoc, silhoutteSizeLoc;
 float creaseEdgeThreshold = 20;
+float zoomScale = 1.0;
+
+// Edge size todo 
+glm::vec2 creaseSize = glm::vec2(1.0, 1.0);
+glm::vec2 silhoutteSize = glm::vec2(0.0, 3.0);
 
 //Loads a shader file and returns the reference to a shader object
 GLuint loadShader(GLenum shaderType, string filename)
@@ -261,7 +265,8 @@ void initialize()
 	wireLoc = glGetUniformLocation(program, "wireMode");
 	lgtLoc = glGetUniformLocation(program, "lightPos");
 	creaseEdgeThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
-
+	silhoutteSizeLoc = glGetUniformLocation(program, "silhoutteSize");
+	creaseSizeLoc = glGetUniformLocation(program, "creaseSize");
 
 
 	glm::vec4 light = glm::vec4(5.0, 5.0, 10.0, 1.0);
@@ -279,20 +284,92 @@ void initialize()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
 }
 
+void zoomInOrOut(int distance)
+{
+	if ((distance < 0 && zoomScale >= 1.0) || (distance > 0 && zoomScale < 10.0)) {
+		zoomScale += 0.1 * distance;
+	}
+
+}
+
 //Callback function for special keyboard events
 void special(int key, int x, int y)
 {
-	if (key == GLUT_KEY_LEFT) rotn_y -= 5.0;
-	else if (key == GLUT_KEY_RIGHT) rotn_y += 5.0;
-	else if (key == GLUT_KEY_UP) rotn_x -= 5.0;
-	else if (key == GLUT_KEY_DOWN) rotn_x += 5.0;
+	switch (key)
+	{
+		case GLUT_KEY_LEFT:
+			rotn_y -= 5.0;
+			break;
+		case GLUT_KEY_RIGHT:
+			rotn_y += 5.0;
+			break;
+		case GLUT_KEY_UP:
+			rotn_x -= 5.0;
+			break;
+		case GLUT_KEY_DOWN:
+			rotn_x += 5.0;
+			break;
+		case GLUT_KEY_PAGE_DOWN:
+			zoomInOrOut(-1);
+			break;
+		case GLUT_KEY_PAGE_UP:
+			zoomInOrOut(1);
+			break;
+	}
+	
 	glutPostRedisplay();
+}
+
+void silhouetteThinckness(float step)
+{
+	// todo update size bounder
+	//silhoutteSize[0] -= 0.1 * step;
+	silhoutteSize[1] += 0.1 * step;
+
+	/*
+	if (silhoutteSize[1] >= 26.0) {
+		silhoutteSize[1] = 26.0;
+	}
+
+	if (silhoutteSize[1] <= 4.0) {
+		silhoutteSize[1] = 4.0;
+	}
+	cout << "1" << silhoutteSize[0] << endl;
+	cout << "2" << silhoutteSize.y << endl;
+	*/
+}
+
+void creaseThinckness(float step)
+{
+	// todo update size bounder
+	creaseSize[0] += 0.1 * step;
+	creaseSize[1] += 0.1 * step;
 }
 
 //Callback function for keyboard events
 void keyboard(unsigned char key, int x, int y)
 {
-	if (key == 'w') wireframe = !wireframe;
+	switch (key)
+	{
+		case '1':
+			wireframe = !wireframe;
+			break;
+		case 'q': //  i thickness of silhouette
+			silhouetteThinckness(1.0);
+			break;
+		case 'a': // d thickness of silhouette
+			silhouetteThinckness(-1.0);
+			break;
+		case 'w': // i thickness of crease 
+			creaseThinckness(1.0);
+			break;
+		case 's': // d thickness of crease 
+			creaseThinckness(-1.0);
+			break;
+
+	}
+
+
 	if(wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	else 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glutPostRedisplay();
@@ -305,7 +382,7 @@ void display()
 	glm::mat4 matrix = glm::mat4(1.0);
 	matrix = glm::rotate(matrix, rotn_x * CDR, glm::vec3(1.0, 0.0, 0.0));  //rotation about x
 	matrix = glm::rotate(matrix, rotn_y * CDR, glm::vec3(0.0, 1.0, 0.0));  //rotation about y
-	matrix = glm::scale(matrix, glm::vec3(modelScale, modelScale, modelScale));
+	matrix = glm::scale(matrix, glm::vec3(modelScale, modelScale, modelScale) * zoomScale);
 	matrix = glm::translate(matrix, glm::vec3(-xc, -yc, -zc));
 
 	glm::mat4 viewMatrix = view * matrix;		//The model-view matrix
@@ -318,6 +395,9 @@ void display()
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
 
 	glUniform1f(creaseEdgeThresholdLoc, creaseEdgeThreshold);
+	
+	glUniform2fv(silhoutteSizeLoc, 1, &silhoutteSize[0]); // creaseSize silhoutteSize
+	glUniform2fv(creaseSizeLoc, 1, &creaseSize[0]);
 
 	if (wireframe) glUniform1i(wireLoc, 1);
 	else		   glUniform1i(wireLoc, 0);
