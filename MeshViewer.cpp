@@ -23,8 +23,6 @@
 #include "loadTGA.h" // upload tga image
 using namespace std;
 // todo list
-// 1. add geom shader and working
-// 2. add 3-Tone shader
 // 3. pencil shading with mipmap
 // 4. add silhouette edges
 // 5. add crease edges
@@ -114,13 +112,13 @@ void initialize()
 
 	//============= Load shaders ==================
 	GLuint shaderv = loadShader(GL_VERTEX_SHADER, shaderPath + "MeshViewer.vert");
-	//GLuint shaderg = loadShader(GL_FRAGMENT_SHADER, shaderPath + "MeshViewer.geom");
+	GLuint shaderg = loadShader(GL_GEOMETRY_SHADER, shaderPath + "MeshViewer.geom");
 	GLuint shaderf = loadShader(GL_FRAGMENT_SHADER, shaderPath + "MeshViewer.frag");
 
 
 	GLuint program = glCreateProgram();
 	glAttachShader(program, shaderv);
-	//glAttachShader(program, shaderg);
+	glAttachShader(program, shaderg);
 	glAttachShader(program, shaderf);
 
 	glLinkProgram(program);
