@@ -24,14 +24,15 @@ void loadTGA(string filename, int level)
 	if (!file)
 	{
 		cout << "*** Error opening image file: " << filename.c_str() << endl;
-		//	exit(1);
+		exit(1);
 	}
 	file.read(&id, 1);
 	file.read(&cmap, 1);
 	file.read(&imgtype, 1);
 	if (imgtype != 2 && imgtype != 3)   //2= colour (uncompressed),  3 = greyscale (uncompressed)
 	{
-		cout << "*** Incompatible image type: " << (int)imgtype << endl;
+		// create mipmap
+		// cout << "*** Incompatible image type: " << (int)imgtype << endl;
 		//	exit(1);
 	}
 	//Color map specification
@@ -65,12 +66,15 @@ void loadTGA(string filename, int level)
 	{
 	case 1:
 		glTexImage2D(GL_TEXTURE_2D, level, 1, wid, hgt, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, imageData);
+		// cout << 1 << level << endl;
 		break;
 	case 3:
 		glTexImage2D(GL_TEXTURE_2D, level, 3, wid, hgt, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+		// cout << 3 << level << endl;
 		break;
 	case 4:
 		glTexImage2D(GL_TEXTURE_2D, level, 4, wid, hgt, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+		// cout << 4 << level << endl;
 		break;
 	}
 	delete imageData;

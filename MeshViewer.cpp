@@ -103,6 +103,7 @@ void loadTextures()
 
 			glActiveTexture(GL_TEXTURE0 + i);  //Texture unit
 			glBindTexture(GL_TEXTURE_2D, texID[i]);
+			//cout << texture << endl;
 			loadTGA(texturesPath + texture, countTextures++);
 
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
