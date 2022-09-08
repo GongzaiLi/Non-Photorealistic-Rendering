@@ -40,6 +40,7 @@ bool wireframe = false;
 
 string shaderPath = "./src/shaders/";
 string modelPath = "./src/models/";
+string texturesPath = "./src/textures/";
 
 GLuint creaseEdgeThresholdLoc, creaseSizeLoc, silhoutteSizeLoc;
 float creaseEdgeThreshold = 20;
@@ -48,6 +49,15 @@ float zoomScale = 1.0;
 // Edge size todo 
 glm::vec2 creaseSize = glm::vec2(1.0, 1.0);
 glm::vec2 silhoutteSize = glm::vec2(0.0, 3.0);
+
+// textures
+const char* textures[3][4] = {
+	{"HandDrawn_1_64.tga", "HandDrawn_1_32.tga", "HandDrawn_1_16.tga", "HandDrawn_1_8.tga"},
+	{"HandDrawn_2_64.tga", "HandDrawn_2_32.tga", "HandDrawn_2_16.tga", "HandDrawn_2_8.tga"},
+	{"HandDrawn_3_64.tga", "HandDrawn_3_32.tga", "HandDrawn_3_16.tga", "HandDrawn_3_8.tga"},
+};
+const int numberOfTextures = 3;
+GLuint texID[numberOfTextures];
 
 //Loads a shader file and returns the reference to a shader object
 GLuint loadShader(GLenum shaderType, string filename)
@@ -78,6 +88,35 @@ GLuint loadShader(GLenum shaderType, string filename)
 	return shader;
 }
 
+// load textures
+void loadTextures()
+{
+	
+	glGenTextures(numberOfTextures, texID);
+	
+	
+	for (int i = 0; i < numberOfTextures; i++) {
+
+		int countTextures = 0;
+
+		for (string texture: textures[i]) {
+
+			glActiveTexture(GL_TEXTURE0 + i);  //Texture unit
+			glBindTexture(GL_TEXTURE_2D, texID[i]);
+			loadTGA(texturesPath + texture, countTextures++);
+
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+		}
+
+	}
+
+
+
+}
+
 // Gets the min max values along x, y, z for scaling and centering the model in the view frustum
 void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& zmin, float& zmax)
 {
@@ -99,13 +138,13 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 //Initialisation function for OpenMesh, shaders and OpenGL
 void initialize()
 {
-	// todo add load textures()
+	loadTextures();
 
 	float xmin, xmax, ymin, ymax, zmin, zmax;
 	float CDR = M_PI / 180.0f;
 
 	//============= Load mesh ==================
-	if (!OpenMesh::IO::read_mesh(mesh, modelPath + "Dolphin.obj")) //Dolphin.obj  Camel.off
+	if (!OpenMesh::IO::read_mesh(mesh, modelPath + "Dolphin.obj")) //Dolphin.obj  Camel.off Homer.off Bunny.off
 	{
 		cerr << "Mesh file read error.\n";
 	}
