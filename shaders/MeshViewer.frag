@@ -25,7 +25,7 @@ void threeTone(float diffTerm, float specTerm)
 
 void pencilShading(float diffTerm, float specTerm)
 {
-    //if (specTerm > 0.98) outColor = vec4(1.0);
+    if (specTerm > 0.98) outColor = vec4(1.0);
 
     if (diffTerm >= 0.8) { // 0.8 to 1.0
         outColor = texture(textureSimple[0], TexCoord);
