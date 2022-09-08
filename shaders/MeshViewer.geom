@@ -21,6 +21,7 @@ in vec3 unitNormal[];
 out vec3 vecNormal;
 out vec3 lgtVec;
 out vec4 halfVec;
+out vec2 TexCoord;
 
 flat out int isDrewEdge;
 
@@ -133,6 +134,21 @@ void drawEdge(int index)
 
 }
 
+void getTexCoord(int index)
+{
+	if (index == 0) {
+		TexCoord.s = 0.0;
+		TexCoord.t = 0.0;
+	} else if (index == 2) {
+		TexCoord.s = 1.0;
+		TexCoord.t = 0.5;
+	} else if (index == 4) {
+		TexCoord.s = 0.0;
+		TexCoord.t = 1.0;
+	}
+	
+}
+
 
 void main()
 {
@@ -144,7 +160,7 @@ void main()
 		{
 			lightingCalculation(i);
 
-			// todo TexCoord
+			getTexCoord(i);
 			isDrewEdge = 0;
             gl_Position = mvpMatrix * gl_in[i].gl_Position;
 			EmitVertex();

@@ -58,6 +58,11 @@ const char* textures[3][4] = {
 };
 const int numberOfTextures = 3;
 GLuint texID[numberOfTextures];
+GLuint textureLoc;
+
+// Toggle 
+GLuint toggleRenderStyleLoc;
+bool toggleRenderStyle = true;
 
 //Loads a shader file and returns the reference to a shader object
 GLuint loadShader(GLenum shaderType, string filename)
@@ -307,7 +312,12 @@ void initialize()
 	creaseEdgeThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
 	silhoutteSizeLoc = glGetUniformLocation(program, "silhoutteSize");
 	creaseSizeLoc = glGetUniformLocation(program, "creaseSize");
+	textureLoc = glGetUniformLocation(program, "textureSimple");
+	toggleRenderStyleLoc = glGetUniformLocation(program, "toggleRenderStyle");
 
+	// texture set up
+	int textureId[3] = { 0, 1, 2 };
+	glUniform1iv(textureLoc, 3, textureId);
 
 	glm::vec4 light = glm::vec4(5.0, 5.0, 10.0, 1.0);
 	glm::mat4 proj;
@@ -406,6 +416,9 @@ void keyboard(unsigned char key, int x, int y)
 		case 's': // d thickness of crease 
 			creaseThinckness(-1.0);
 			break;
+		case ' ': // d thickness of crease 
+			toggleRenderStyle = !toggleRenderStyle;
+			break;
 
 	}
 
@@ -441,6 +454,9 @@ void display()
 
 	if (wireframe) glUniform1i(wireLoc, 1);
 	else		   glUniform1i(wireLoc, 0);
+
+	
+	glUniform1i(toggleRenderStyleLoc, toggleRenderStyle);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
