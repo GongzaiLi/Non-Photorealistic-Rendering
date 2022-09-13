@@ -21,6 +21,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/freeglut.h>
 #include "loadTGA.h" // upload tga image
+#include <OpenMesh/Tools/Decimater/DecimaterT.hh>
+#include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 using namespace std;
 // todo list
 // 1. pencil shading with mipmap
@@ -42,13 +44,17 @@ string shaderPath = "./src/shaders/";
 string modelPath = "./src/models/";
 string texturesPath = "./src/textures/";
 
-GLuint creaseEdgeThresholdLoc, creaseSizeLoc, silhoutteSizeLoc;
+GLuint creaseEdgeThresholdLoc, creaseSizeLoc, silhoutteSizeLoc, drawSilhoutteLoc, drawCreaseLoc, edgeMinimizeGapLoc;
 float creaseEdgeThreshold = 20;
 float zoomScale = 1.0;
+bool drawSilhoutte = true;
+bool drawCrease = true;
+
+float edgeMinimizeGap = 0;
 
 // Edge size todo 
 glm::vec2 creaseSize = glm::vec2(1.0, 1.0);
-glm::vec2 silhoutteSize = glm::vec2(0.0, 3.0);
+glm::vec2 silhoutteSize = glm::vec2(0.0, 3.5);
 
 // textures
 const char* textures[3][4] = {
@@ -58,11 +64,16 @@ const char* textures[3][4] = {
 };
 const int numberOfTextures = 3;
 GLuint texID[numberOfTextures];
-GLuint textureLoc;
+GLuint textureLoc, multiTexturingModelLoc;
+bool multiTexturingModel = true;
 
 // Toggle 
 GLuint toggleRenderStyleLoc;
 bool toggleRenderStyle = true;
+
+// mesh
+int nverts = 200;
+bool isMashSimplification = false;
 
 //Loads a shader file and returns the reference to a shader object
 GLuint loadShader(GLenum shaderType, string filename)
@@ -102,20 +113,21 @@ void loadTextures()
 	
 	for (int i = 0; i < numberOfTextures; i++) {
 
+		glActiveTexture(GL_TEXTURE0 + i);  //Texture unit
+		glBindTexture(GL_TEXTURE_2D, texID[i]);
+		//cout << texture << endl;
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
 		int countTextures = 0;
 
 		for (string texture: textures[i]) {
-
-			glActiveTexture(GL_TEXTURE0 + i);  //Texture unit
-			glBindTexture(GL_TEXTURE_2D, texID[i]);
-			//cout << texture << endl;
-			loadTGA(texturesPath + texture, countTextures++);
-
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glGenerateMipmap(GL_TEXTURE_2D);
-
+			loadTGA_mipmap(texturesPath + texture, countTextures++);
+			
 		}
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 	}
 
@@ -141,6 +153,19 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 	xmax = pmax[0];  ymax = pmax[1];  zmax = pmax[2];
 }
 
+void meshSimplification()
+{
+	// Decimation Module Handle type
+	typedef OpenMesh::Decimater::DecimaterT< MyMesh > MyDecimater;
+	typedef OpenMesh::Decimater::ModQuadricT< MyMesh >::Handle HModQuadric;
+	MyDecimater decimater(mesh); // a decimater object, connected to a mesh
+	HModQuadric hModQuadric; // use a quadric module
+	decimater.add(hModQuadric); // register module
+	decimater.initialize();
+	decimater.decimate_to(nverts); // nverts = 200
+	mesh.garbage_collection();
+}
+
 //Initialisation function for OpenMesh, shaders and OpenGL
 void initialize()
 {
@@ -149,11 +174,15 @@ void initialize()
 	float xmin, xmax, ymin, ymax, zmin, zmax;
 	float CDR = M_PI / 180.0f;
 
+	
 	//============= Load mesh ==================
 	if (!OpenMesh::IO::read_mesh(mesh, modelPath + "Dolphin.obj")) //Dolphin.obj  Camel.off Homer.off Bunny.off
 	{
 		cerr << "Mesh file read error.\n";
 	}
+	if (isMashSimplification) meshSimplification();// Mesh Simplification 
+
+
 	getBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
 
 	xc = (xmin + xmax)*0.5f;
@@ -314,6 +343,10 @@ void initialize()
 	creaseSizeLoc = glGetUniformLocation(program, "creaseSize");
 	textureLoc = glGetUniformLocation(program, "textureSimple");
 	toggleRenderStyleLoc = glGetUniformLocation(program, "toggleRenderStyle");
+	drawSilhoutteLoc = glGetUniformLocation(program, "drawSilhoutte");
+	drawCreaseLoc = glGetUniformLocation(program, "drawCrease");
+	multiTexturingModelLoc = glGetUniformLocation(program, "multiTexturingModel");
+	edgeMinimizeGapLoc = glGetUniformLocation(program, "edgeMinimizeGap");
 
 	// texture set up
 	int textureId[3] = { 0, 1, 2 };
@@ -332,6 +365,8 @@ void initialize()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
+
+	meshSimplification();
 }
 
 void zoomInOrOut(int distance)
@@ -392,8 +427,18 @@ void silhouetteThinckness(float step)
 void creaseThinckness(float step)
 {
 	// todo update size bounder
-	creaseSize[0] += 0.1 * step;
+	//creaseSize[0] += 0.1 * step;
 	creaseSize[1] += 0.1 * step;
+}
+
+void creaseEdgeThresholdControl(float direction) {
+	creaseEdgeThreshold += 0.1 * direction;
+	cout << "creaseEdgeThreshold" << creaseEdgeThreshold << endl;
+}
+
+void edgeMinimizeGapControl(float direction) {
+	edgeMinimizeGap += 0.1 * direction;
+	cout << "edgeMinimizeGap" << edgeMinimizeGap << endl;
 }
 
 //Callback function for keyboard events
@@ -403,6 +448,17 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		case '1':
 			wireframe = !wireframe;
+			break;
+		case '2': 
+			drawSilhoutte = !drawSilhoutte;
+			break;
+		case '3':
+			drawCrease = !drawCrease;
+			break;
+		case '0':
+			isMashSimplification = !isMashSimplification;
+			wireframe = true;
+			initialize();
 			break;
 		case 'q': //  i thickness of silhouette
 			silhouetteThinckness(1.0);
@@ -415,6 +471,21 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 		case 's': // d thickness of crease 
 			creaseThinckness(-1.0);
+			break;
+		case 'e':
+			creaseEdgeThresholdControl(1.0);
+			break;
+		case 'd':
+			creaseEdgeThresholdControl(-1.0);
+			break;
+		case 'r':
+			edgeMinimizeGapControl(1.0);
+			break;
+		case 'f':
+			edgeMinimizeGapControl(-1.0);
+			break;
+		case 'm':
+			multiTexturingModel = !multiTexturingModel;
 			break;
 		case ' ': // d thickness of crease 
 			toggleRenderStyle = !toggleRenderStyle;
@@ -449,12 +520,16 @@ void display()
 
 	glUniform1f(creaseEdgeThresholdLoc, creaseEdgeThreshold);
 	
+	
 	glUniform2fv(silhoutteSizeLoc, 1, &silhoutteSize[0]); // creaseSize silhoutteSize
 	glUniform2fv(creaseSizeLoc, 1, &creaseSize[0]);
 
-	if (wireframe) glUniform1i(wireLoc, 1);
-	else		   glUniform1i(wireLoc, 0);
+	glUniform1i(wireLoc, wireframe);
+	glUniform1i(drawSilhoutteLoc, drawSilhoutte);
+	glUniform1i(drawCreaseLoc, drawCrease);
+	glUniform1i(multiTexturingModelLoc, multiTexturingModel);
 
+	glUniform1f(edgeMinimizeGapLoc, edgeMinimizeGap);
 	
 	glUniform1i(toggleRenderStyleLoc, toggleRenderStyle);
 

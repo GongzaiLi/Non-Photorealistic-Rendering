@@ -3,6 +3,7 @@
 uniform sampler2D textureSimple[3];
 uniform int wireMode;
 uniform int toggleRenderStyle;
+uniform int multiTexturingModel;
 
 in vec3 vecNormal;
 in vec3 lgtVec;
@@ -23,19 +24,28 @@ void threeTone(float diffTerm, float specTerm)
     else outColor = vec4(0.0, 1.0, 1.0, 1.0);
 }
 
+void multiTexturing(float diffTerm)
+{
+    if (diffTerm >= 0.4) {
+        outColor = mix(texture(textureSimple[1], TexCoord), texture(textureSimple[0], TexCoord),  (diffTerm - 0.4) / 0.4);
+    } else if (diffTerm <= 0.2) {
+        outColor = mix(texture(textureSimple[2], TexCoord), texture(textureSimple[1], TexCoord),  (diffTerm - 0.2) / 0.2);
+    } else {
+        outColor = texture(textureSimple[1], TexCoord);
+    }
+}
+
 void pencilShading(float diffTerm, float specTerm)
 {
-    if (specTerm > 0.98) outColor = vec4(1.0);
-
-    if (diffTerm >= 0.8) { // 0.8 to 1.0
+    if (specTerm > 0.98) {
+        outColor = vec4(1.0);
+    } else if (diffTerm >= 0.6) { // 0.8 to 1.0
         outColor = texture(textureSimple[0], TexCoord);
     } else if (diffTerm <= 0.0) {
         outColor = texture(textureSimple[2], TexCoord);
     } else {
-        if (diffTerm >= 0.5) {
-            outColor = mix(texture(textureSimple[1], TexCoord), texture(textureSimple[0], TexCoord),  (diffTerm - 0.5) / 0.5);
-        } else if (diffTerm <= 0.3) {
-            outColor = mix(texture(textureSimple[2], TexCoord), texture(textureSimple[1], TexCoord),  (diffTerm - 0.3) / 0.3);
+        if (multiTexturingModel == 1) {
+            multiTexturing(diffTerm);
         } else {
             outColor = texture(textureSimple[1], TexCoord);
         }

@@ -14,7 +14,7 @@
 #include <fstream>
 using namespace std;
 
-void loadTGA(string filename, int level)
+void loadTGA_mipmap(string filename, int level)
 {
 	char id, cmap, imgtype, bpp, c_garb;
 	char* imageData, temp;

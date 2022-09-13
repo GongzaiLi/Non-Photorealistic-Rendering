@@ -10,9 +10,12 @@ uniform mat4 norMatrix;
 uniform vec4 lightPos;
 
 uniform float creaseEdgeThreshold;
+uniform float edgeMinimizeGap;
 
 uniform vec2 silhoutteSize;
 uniform vec2 creaseSize;
+uniform int drawSilhoutte;
+uniform int drawCrease;
 
 // in
 in vec3 unitNormal[];
@@ -53,21 +56,22 @@ void drawSilhouetteEdge(vec4 posnA, vec4 posnB, vec4 n1, vec4 n2)
 	vec4 normal = normalize(n1 + n2);
 
 	vec4 p1, p2, q1, q2;
+	float d1 = silhoutteSize[0], d2 = silhoutteSize[1];
 
-	/*// todo update
-	vec4 a_to_b = 3 * normalize(posnB - posnA); 
-    vec4 b_to_a = 3 * normalize(posnA - posnB);
-    p1 = (posnA + b_to_a) + silhoutteSize[0] * normal; //  + silEdges[0] 
-    p2 = (posnA + b_to_a) + silhoutteSize[1] * normal;
-    q1 = (posnB + b_to_a) + silhoutteSize[0] * normal;
-    q2 = (posnB + b_to_a) + silhoutteSize[1] * normal;
+
+	vec4 a_to_b = edgeMinimizeGap * normalize(posnB - posnA); 
+    vec4 b_to_a = edgeMinimizeGap * normalize(posnA - posnB);
+    p1 = (posnA + b_to_a) + d1 * normal;
+    p2 = (posnA + b_to_a) + d2 * normal;
+    q1 = (posnB + a_to_b) + d1 * normal;
+    q2 = (posnB + a_to_b) + d2 * normal;
+
+	/*
+	p1 = posnA + d1 * normal;
+    p2 = posnA + d2 * normal;
+    q1 = posnB + d1 * normal;
+    q2 = posnB + d2 * normal;
 	*/
-
-	p1 = posnA + silhoutteSize[0] * normal;
-    p2 = posnA + silhoutteSize[1] * normal;
-    q1 = posnB + silhoutteSize[0] * normal;
-    q2 = posnB + silhoutteSize[1] * normal;
-
 	isDrewEdge = 1;
 	
 	gl_Position = mvpMatrix * p1;
@@ -93,12 +97,14 @@ void drawCreaseEdge(vec4 posnA, vec4 posnB, vec4 n1, vec4 n2) {
 
 	vec4 p1, p2, q1, q2;
 
-	// todo update
+	vec4 a_to_b = edgeMinimizeGap * normalize(posnB - posnA); 
+    vec4 b_to_a = edgeMinimizeGap * normalize(posnA - posnB);
+
 	float d1 = creaseSize[0], d2 = creaseSize[1];
-    p1 = posnA + d1 * v + d2 * w; // creaseEdges[0] creaseEdges[1]
-    p2 = posnA + d1 * v - d2 * w;
-    q1 = posnB + d1 * v + d2 * w;
-    q2 = posnB + d1 * v - d2 * w;
+    p1 = (posnA + b_to_a) + d1 * v + d2 * w;
+    p2 = (posnA + b_to_a) + d1 * v - d2 * w;
+    q1 = (posnB + a_to_b) + d1 * v + d2 * w;
+    q2 = (posnB + a_to_b) + d1 * v - d2 * w;
 
     isDrewEdge = 1;
 
@@ -121,16 +127,20 @@ void drawEdge(int index)
 {
 	vec4 normAdj = calculateNormal(index, (index + 1) % 6, (index + 2) % 6);
 	
-	// toggler  Silhoutte
-	if ((mvMatrix * normMain).z > 0 && (mvMatrix * normAdj).z < 0) { //mvMatrix
-		drawSilhouetteEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, normMain, normAdj);
+	if (drawSilhoutte == 1) {
+		if ((mvMatrix * normMain).z > 0 && (mvMatrix * normAdj).z < 0) { //mvMatrix
+			drawSilhouetteEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, normMain, normAdj);
+		}
 	}
+	
 
-	// toggler Crease
-	T = cos(creaseEdgeThreshold * PI / 180.0);
-	if (dot(normMain, normAdj) < T) {
-		drawCreaseEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, normMain, normAdj);
+	if (drawCrease == 1) {
+		T = cos(creaseEdgeThreshold * PI / 180.0);
+		if (dot(normMain, normAdj) < T) {
+			drawCreaseEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, normMain, normAdj);
+		}
 	}
+	
 
 }
 
@@ -138,13 +148,13 @@ void getTexCoord(int index)
 {
 	if (index == 0) {
 		TexCoord.s = 0.0;
-		TexCoord.t = 0.0;
+		TexCoord.t = 1.0;
 	} else if (index == 2) {
+		TexCoord.s = 0.0;
+		TexCoord.t = 0.0;
+	} else if (index == 4) {
 		TexCoord.s = 1.0;
 		TexCoord.t = 0.5;
-	} else if (index == 4) {
-		TexCoord.s = 0.0;
-		TexCoord.t = 1.0;
 	}
 	
 }
@@ -172,7 +182,7 @@ void main()
 
 	for(int i = 0; i < gl_in.length(); i++)
     {
-		if (i == 0 || i == 2 || i == 4){
+		if (i == 0 || i == 2 || i == 4) {
 			drawEdge(i);
 		}
     }
