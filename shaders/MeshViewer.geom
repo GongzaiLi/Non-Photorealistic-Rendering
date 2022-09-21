@@ -179,12 +179,13 @@ void main()
     EndPrimitive();
 
 	
-
+	
 	for(int i = 0; i < gl_in.length(); i++)
     {
 		if (i == 0 || i == 2 || i == 4) {
 			drawEdge(i);
 		}
     }
+	
 	
 }
