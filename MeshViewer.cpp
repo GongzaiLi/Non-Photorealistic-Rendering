@@ -1,13 +1,14 @@
 //  ========================================================================
 //  COSC422: Advanced Computer Graphics;  University of Canterbury (2021)
-//
+//	Name: Gongzai Li
+// 
 //  FILE NAME: MeshViewer.cpp
 //  Triangle mesh viewer using OpenMesh and OpenGL-4
 //  This program assumes that the mesh consists of only triangles.
 //  The model is scaled and translated to the origin to fit within the view frustum
 //
 //  Use arrow keys to rotate the model
-//  Use 'w' key to toggle between wireframe and solid fill modes
+//  Use '1' key to toggle between wireframe and solid fill modes
 //  ========================================================================
 
 #define _USE_MATH_DEFINES // for C++  
@@ -24,10 +25,6 @@
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 using namespace std;
-// todo list
-// 1. pencil shading with mipmap
-// 2. pencil shading
-
 
 typedef OpenMesh::TriMesh_ArrayKernelT<> MyMesh;
 MyMesh mesh;
@@ -52,9 +49,8 @@ bool drawCrease = true;
 
 float edgeMinimizeGap = 0;
 
-// Edge size todo 
 glm::vec2 creaseSize = glm::vec2(1.0, 1.0);
-glm::vec2 silhoutteSize = glm::vec2(0.0, 3.5);
+glm::vec2 silhoutteSize = glm::vec2(0.0, 3.0);
 
 // textures
 const char* textures[3][4] = {
@@ -366,7 +362,6 @@ void initialize()
 	glEnable(GL_NORMALIZE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
 
-	meshSimplification();
 }
 
 void zoomInOrOut(int distance)
@@ -407,7 +402,6 @@ void special(int key, int x, int y)
 
 void silhouetteThinckness(float step)
 {
-	// todo update size bounder
 	//silhoutteSize[0] -= 0.1 * step;
 	silhoutteSize[1] += 0.1 * step;
 
@@ -426,19 +420,18 @@ void silhouetteThinckness(float step)
 
 void creaseThinckness(float step)
 {
-	// todo update size bounder
 	//creaseSize[0] += 0.1 * step;
 	creaseSize[1] += 0.1 * step;
 }
 
 void creaseEdgeThresholdControl(float direction) {
 	creaseEdgeThreshold += 0.1 * direction;
-	cout << "creaseEdgeThreshold" << creaseEdgeThreshold << endl;
+	//cout << "creaseEdgeThreshold" << creaseEdgeThreshold << endl;
 }
 
 void edgeMinimizeGapControl(float direction) {
 	edgeMinimizeGap += 0.1 * direction;
-	cout << "edgeMinimizeGap" << edgeMinimizeGap << endl;
+	//cout << "edgeMinimizeGap" << edgeMinimizeGap << endl;
 }
 
 //Callback function for keyboard events

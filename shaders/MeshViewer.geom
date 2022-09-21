@@ -30,7 +30,7 @@ flat out int isDrewEdge;
 
 // global variable
 vec4 normMain;
-float PI = 3.14159265;
+float PI = 3.1415;
 float T;
 
 void lightingCalculation(int index)
@@ -178,8 +178,6 @@ void main()
     }
     EndPrimitive();
 
-	
-	
 	for(int i = 0; i < gl_in.length(); i++)
     {
 		if (i == 0 || i == 2 || i == 4) {
